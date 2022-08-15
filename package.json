@@ -10,7 +10,8 @@
     "addReward": "npx hardhat addReward --contractaddress 0x0000000000000000000000000000000002dBDB36 --rewardaddress 0x000000000000000000000000000000000215311b --rewarddistributor 0x00000000000000000000000000000000020cf0a3 --rewardduration 86400",
     "sendReward": "npx hardhat sendReward --contractaddress 0x0000000000000000000000000000000002dB534A --rewardaddress 0x000000000000000000000000000000000215311b --rewardamount 1 --rewarddecimals 8",
     "associateToken": "npx hardhat associateToken --accountid 0.0.34402467 --pk 0xaaedb59be1a2fa317fc4cbbcd017ca30360f0cd7a0d93f862de72f839420979b --tokenid 0.0.34741650",
-    "approveToken": "npx hardhat approveToken --accountid 0.0.34402467 --pk 0xaaedb59be1a2fa317fc4cbbcd017ca30360f0cd7a0d93f862de72f839420979b --spenderaccountid 0.0.47859427 --tokenid 0.0.34741650 --amount 100000000000"
+    "approveToken": "npx hardhat approveToken --accountid 0.0.34402467 --pk 0xaaedb59be1a2fa317fc4cbbcd017ca30360f0cd7a0d93f862de72f839420979b --spenderaccountid 0.0.47859427 --tokenid 0.0.34741650 --amount 100000000000",
+    "test": "npx hardhat test"
   },
   "repository": "https://github.com/LimeChain/HeliSwap-yield-farming",
   "author": "Martin Dobrev",
@@ -39,6 +40,12 @@
     "solidity-coverage": "^0.7.21",
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.0",
-    "typescript": ">=4.5.0"
+    "typescript": ">=4.5.0",
+    "abi-decoder": "^2.3.0",
+    "@eth-optimism/smock": "^1.1.10",
+    "@nomiclabs/ethereumjs-vm": "^4.2.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.7.3"
   }
 }

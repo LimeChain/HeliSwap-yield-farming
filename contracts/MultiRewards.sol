@@ -305,7 +305,8 @@ library SafeERC20 {
 
     // solhint-disable-next-line avoid-low-level-calls
     (bool success, bytes memory returndata) = address(token).call(data);
-    require(success, 'SafeERC20: low-level call failed');
+    require(success, string(abi.encodePacked('SafeERC20: low-level call failed ',
+      success,', ', returndata)));
 
     if (returndata.length > 0) {
       // Return data is optional
@@ -558,7 +559,7 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     external
     updateReward(address(0))
   {
-    require(rewardData[_rewardsToken].rewardsDistributor == msg.sender);
+    require(rewardData[_rewardsToken].rewardsDistributor == msg.sender, 'Reward distributor different from tx sender');
     // handle the transfer of reward tokens via `transferFrom` to reduce the number
     // of transactions required and ensure correctness of the reward amount
     IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
