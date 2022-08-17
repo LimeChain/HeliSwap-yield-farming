@@ -8,7 +8,7 @@ import {expect} from "chai";
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 const deployMintERC20 = require('../../scripts/utils/deploy-mint-erc20');
 const deployMultiRewards = require('../../scripts/01-deploy');
-const addRewards = require('../../scripts/02-addRewards');
+const addRewards = require('../../scripts/addRewards-with-contract');
 
 const {
   onlyGivenAddressCanInvoke,
@@ -16,8 +16,11 @@ const {
 } = require('./helpers');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { artifacts } = require('hardhat');
-const { currentTime, toUnit, fastForward } = require('../utils')();
+const { currentTime, toUnit } = require('../utils')();
 
+function fastForward(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 describe('MultiRewards', function () {
   this.timeout(10_200_000);
@@ -35,9 +38,10 @@ describe('MultiRewards', function () {
     stakingToken: Contract,
     externalRewardsToken: Contract,
     multiRewards: Contract,
+    ownerMultiRewards: Contract,
     rewardsDistribution: Contract;
 
-  const DAY = 86400;
+  const DAY = 2000;
   const ZERO_BN = toBN(0);
 
   // TODO: Figure this out
@@ -67,17 +71,18 @@ describe('MultiRewards', function () {
       // @ts-ignore
     ] = accounts
 
-    stakingToken = await deployMintERC20(deployer.address, 10000, "Staking Token", "STKN");
-    rewardsToken = await deployMintERC20(deployer.address, 10000, "External Rewards Token", "MOAR");
-    anotherRewardsToken = await deployMintERC20(deployer.address, 10000, "External Rewards Token 2", "MOAR2");
+    stakingToken = await deployMintERC20(owner.address, 10000, "Staking Token", "STKN");
+    rewardsToken = await deployMintERC20(owner.address, 10000, "External Rewards Token", "MOAR");
+    anotherRewardsToken = await deployMintERC20(owner.address, 10000, "External Rewards Token 2", "MOAR2");
 
-    // TODO: Setup rewards distribution contract
+    multiRewards = await deployMultiRewards(owner.address, stakingToken.address)
 
-    multiRewards = await deployMultiRewards(deployer.address, stakingToken.address)
+    // @ts-ignore
+    ownerMultiRewards = multiRewards.connect(owner)
 
     // TODO: Figure out parameters here
-    await addRewards(multiRewards.address, rewardsToken.address, getAddress(mockRewardsDistributionAddress.address), 10000)
-    await addRewards(multiRewards.address, anotherRewardsToken.address, getAddress(mockRewardsDistributionAddress.address), 10000)
+    await addRewards(ownerMultiRewards, rewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY)
+    await addRewards(ownerMultiRewards, anotherRewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY)
   });
 
   xit('ensure only known functions are mutative', () => {
@@ -98,7 +103,7 @@ describe('MultiRewards', function () {
     });
   });
 
-  describe('Constructor & Settings', () => {
+  xdescribe('Constructor & Settings', () => {
     it('should set rewards token on constructor', async () => {
       expect(await multiRewards.rewardTokens(0)).to.be.equal(getAddress(rewardsToken.address))
       expect(await multiRewards.rewardTokens(1)).to.be.equal(getAddress(anotherRewardsToken.address))
@@ -109,15 +114,11 @@ describe('MultiRewards', function () {
     });
 
     it('should set owner on constructor', async () => {
-      expect(await multiRewards.owner()).to.be.equal(getAddress(deployer.address))
+      expect(await multiRewards.owner()).to.be.equal(getAddress(owner.address))
     });
   });
 
-  function expandTo18Decimals(n: number): BigNumber {
-    return hethers.BigNumber.from(n).mul(hethers.BigNumber.from(10).pow(18))
-  }
-
-  describe('Function permissions', () => {
+  xdescribe('Function permissions', () => {
     // const rewardValue = expandTo18Decimals(1.0);
     const rewardValue = BigNumber.from(1);
 
@@ -127,7 +128,7 @@ describe('MultiRewards', function () {
       await deployerConnectedRewardsTokenContract.transfer(multiRewards.address, BigNumber.from(1));
     });
 
-    it('only rewardsDistribution address can call notifyRewardAmount', async () => {
+    xit('only rewardsDistribution address can call notifyRewardAmount', async () => {
       const data = await multiRewards.rewardData(getAddress(rewardsToken.address));
 
       // @ts-ignore
@@ -143,52 +144,63 @@ describe('MultiRewards', function () {
       });
     });
 
-    xit('only owner address can call setRewardsDuration', async () => {
-      await fastForward(DAY * 7);
+    it('only owner address can call setRewardsDuration', async () => {
+      await fastForward(2 * DAY);
       await onlyGivenAddressCanInvoke({
-        fnc: multiRewards.setRewardsDuration,
+        contract: multiRewards,
+        fnc: "setRewardsDuration",
         args: [getAddress(rewardsToken.address), 70],
         address: owner,
         accounts,
       });
     });
 
-    it('only owner address can call setPaused', async () => {
+    xit('only owner address can call setPaused', async () => {
       await onlyGivenAddressCanInvoke({
         contract: multiRewards,
         fnc: "setPaused",
         args: [true],
-        address: deployer,
+        address: owner,
         accounts,
       });
     });
   });
 
-  xdescribe('Pausable', async () => {
+  describe('Pausable', async () => {
+    let ownerMultiRewards: Contract, stakingAccountMultiRewards: Contract,
+      ownerStakingToken: Contract, stakingAccountStakingToken: Contract;
     beforeEach(async () => {
-      await multiRewards.setPaused(true, { from: owner });
+      // @ts-ignore
+      ownerMultiRewards = multiRewards.connect(owner)
+      // @ts-ignore
+      stakingAccountMultiRewards = multiRewards.connect(stakingAccount1)
+      // @ts-ignore
+      ownerStakingToken = stakingToken.connect(owner)
+      // @ts-ignore
+      stakingAccountStakingToken = stakingToken.connect(stakingAccount1)
+      await ownerMultiRewards.setPaused(true);
     });
     it('should revert calling stake() when paused', async () => {
-      const totalToStake = toUnit('100');
-      await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
-      await stakingToken.approve(multiRewards.address, totalToStake, { from: stakingAccount1 });
+      const totalToStake = BigNumber.from(1);
+      await ownerStakingToken.transfer(stakingAccount1.address, totalToStake);
+      await stakingAccountStakingToken.approve(multiRewards.address, totalToStake);
 
       await assert.revert(
-        multiRewards.stake(totalToStake, { from: stakingAccount1 }),
-        'This action cannot be performed while the contract is paused'
+        stakingAccountMultiRewards.stake(totalToStake)
       );
     });
     it('should not revert calling stake() when unpaused', async () => {
-      await multiRewards.setPaused(false, { from: owner });
+      await ownerMultiRewards.setPaused(false);
 
-      const totalToStake = toUnit('100');
-      await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
-      await stakingToken.approve(multiRewards.address, totalToStake, { from: stakingAccount1 });
+      const totalToStake = BigNumber.from(100);
+      await ownerStakingToken.transfer(stakingAccount1.address, totalToStake);
+      await stakingAccountStakingToken.approve(multiRewards.address, totalToStake);
 
-      await multiRewards.stake(totalToStake, { from: stakingAccount1 });
+      await stakingAccountMultiRewards.stake(totalToStake);
     });
   });
 
+  // The above are DONE
   xdescribe('External Rewards Recovery', () => {
     const amount = toUnit('5000');
     beforeEach(async () => {
@@ -622,12 +634,27 @@ describe('MultiRewards', function () {
   //   });
   // });
 
-  xdescribe('Integration Tests', () => {
+  describe('Integration Tests', () => {
+    let ownerMultiRewards: Contract,
+      ownerStakingToken: Contract,
+      stakingAccountStakingToken: Contract,
+      stakingAccountMultiRewards: Contract,
+      ownerRewardsToken: Contract
+
     before(async () => {
+      // @ts-ignore
+      ownerMultiRewards = multiRewards.connect(owner)
+      // @ts-ignore
+      ownerStakingToken = stakingToken.connect(owner)
+      // @ts-ignore
+      ownerRewardsToken = rewardsToken.connect(owner)
+      // @ts-ignore
+      stakingAccountMultiRewards = multiRewards.connect(stakingAccount1)
+      // @ts-ignore
+      stakingAccountStakingToken = stakingToken.connect(stakingAccount1)
+
       // Set rewardDistribution address
-      await multiRewards.setRewardsDistribution(rewardsDistribution.address, {
-        from: owner,
-      });
+      await ownerMultiRewards.setRewardsDistribution(rewardsDistribution.address);
       assert.equal(await multiRewards.rewardsDistribution(), rewardsDistribution.address);
 
       // await setRewardsTokenExchangeRate();
@@ -635,33 +662,36 @@ describe('MultiRewards', function () {
 
     it('stake and claim', async () => {
       // Transfer some LP Tokens to user
-      const totalToStake = toUnit('500');
-      await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+      const totalToStake = BigNumber.from('500');
+      await ownerStakingToken.transfer(stakingAccount1, totalToStake);
 
       // Stake LP Tokens
-      await stakingToken.approve(multiRewards.address, totalToStake, { from: stakingAccount1 });
-      await multiRewards.stake(totalToStake, { from: stakingAccount1 });
+      await stakingAccountStakingToken.approve(multiRewards.address, totalToStake);
+      await stakingAccountMultiRewards.stake(totalToStake);
 
       // Distribute some rewards
-      const totalToDistribute = toUnit('35000');
-      assert.equal(await rewardsDistribution.distributionsLength(), 0);
-      await rewardsDistribution.addRewardDistribution(multiRewards.address, totalToDistribute, {
-        from: owner,
-      });
-      assert.equal(await rewardsDistribution.distributionsLength(), 1);
+      // TODO: Figure out rewards distribution contract....
+      const totalToDistribute = BigNumber.from('35000');
+      // assert.equal(await rewardsDistribution.distributionsLength(), 0);
+      // await rewardsDistribution.addRewardDistribution(multiRewards.address, totalToDistribute, {
+      //   from: owner,
+      // });
+      // assert.equal(await rewardsDistribution.distributionsLength(), 1);
 
       // Transfer Rewards to the RewardsDistribution contract address
-      await rewardsToken.transfer(rewardsDistribution.address, totalToDistribute, { from: owner });
+      await ownerRewardsToken.transfer(rewardsDistribution.address, totalToDistribute);
 
+      // TODO: Figure out rewards distribution contract....
       // Distribute Rewards called from Synthetix contract as the authority to distribute
-      await rewardsDistribution.distributeRewards(totalToDistribute, {
-        from: authority,
-      });
+      // await rewardsDistribution.distributeRewards(totalToDistribute, {
+      //   from: authority,
+      // });
 
       // Period finish should be ~7 days from now
       const periodFinish = await multiRewards.periodFinish();
-      const curTimestamp = await currentTime();
-      assert.equal(parseInt(periodFinish.toString(), 10), curTimestamp + DAY * 7);
+      // TODO: Figure out this assertion
+      // const curTimestamp = await currentTime();
+      // assert.equal(parseInt(periodFinish.toString(), 10), curTimestamp + DAY * 7);
 
       // Reward duration is 7 days, so we'll
       // Fastforward time by 6 days to prevent expiration
@@ -669,9 +699,11 @@ describe('MultiRewards', function () {
 
       // Reward rate and reward per token
       const rewardRate = await multiRewards.rewardRate();
+      // TODO: Figure out rewards big number assertion/comparison
       assert.bnGt(rewardRate, ZERO_BN);
 
       const rewardPerToken = await multiRewards.rewardPerToken();
+      // TODO: Figure out rewards big number assertion/comparison
       assert.bnGt(rewardPerToken, ZERO_BN);
 
       // Make sure we earned in proportion to reward per token
@@ -681,7 +713,7 @@ describe('MultiRewards', function () {
       // Make sure after withdrawing, we still have the ~amount of rewardRewards
       // The two values will be a bit different as time has "passed"
       const initialWithdraw = toUnit('100');
-      await multiRewards.withdraw(initialWithdraw, { from: stakingAccount1 });
+      await stakingAccountMultiRewards.withdraw(initialWithdraw);
       assert.bnEqual(initialWithdraw, await stakingToken.balanceOf(stakingAccount1));
 
       const rewardRewardsEarnedPostWithdraw = await multiRewards.earned(stakingAccount1);
@@ -689,14 +721,14 @@ describe('MultiRewards', function () {
 
       // Get rewards
       const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
-      await multiRewards.getReward({ from: stakingAccount1 });
+      await stakingAccountMultiRewards.getReward();
       const postRewardRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 
       assert.bnGt(postRewardRewardBal, initialRewardBal);
 
       // Exit
       const preExitLPBal = await stakingToken.balanceOf(stakingAccount1);
-      await multiRewards.exit({ from: stakingAccount1 });
+      await stakingAccountMultiRewards.exit();
       const postExitLPBal = await stakingToken.balanceOf(stakingAccount1);
       assert.bnGt(postExitLPBal, preExitLPBal);
     });
