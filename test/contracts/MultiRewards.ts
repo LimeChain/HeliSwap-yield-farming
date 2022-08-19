@@ -59,6 +59,14 @@ describe('MultiRewards', function () {
   // TODO: Figure out how to replace snapshots. Maybe redeployment?
   // addSnapshotBeforeRestoreAfterEach();
 
+  async function replaceRewards(period: number) {
+    rewardsToken = await deployMintERC20(owner.address, 10000000, 'External Rewards Token', 'MOAR');
+    await addRewards(ownerMultiRewards, rewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY * period);
+
+    anotherRewardsToken = await deployMintERC20(owner.address, 10000000, "External Rewards Token 2", "MOAR2");
+    await addRewards(ownerMultiRewards, anotherRewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY * period)
+  }
+
   before(async () => {
     // @ts-ignore
     accounts = await hardhat.hethers.getSigners();
@@ -74,38 +82,16 @@ describe('MultiRewards', function () {
     ] = accounts
 
     stakingToken = await deployMintERC20(owner.address, 10000000, "Staking Token", "STKN");
-    rewardsToken = await deployMintERC20(owner.address, 10000000, "External Rewards Token", "MOAR");
-    anotherRewardsToken = await deployMintERC20(owner.address, 10000000, "External Rewards Token 2", "MOAR2");
 
     multiRewards = await deployMultiRewards(owner.address, stakingToken.address)
 
     // @ts-ignore
     ownerMultiRewards = multiRewards.connect(owner)
 
-    // TODO: Figure out parameters here
-    await addRewards(ownerMultiRewards, rewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY * 10)
-    await addRewards(ownerMultiRewards, anotherRewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY * 10)
+    await replaceRewards(10);
   });
 
-  xit('ensure only known functions are mutative', () => {
-    ensureOnlyExpectedMutativeFunctions({
-      abi: multiRewards.abi,
-      ignoreParents: ['ReentrancyGuard', 'Owned'],
-      expected: [
-        'stake',
-        'withdraw',
-        'exit',
-        'getReward',
-        'notifyRewardAmount',
-        'setPaused',
-        'setRewardsDistribution',
-        'setRewardsDuration',
-        'recoverERC20',
-      ],
-    });
-  });
-
-  xdescribe('Constructor & Settings', () => {
+  describe('Constructor & Settings', () => {
     it('should set rewards token on constructor', async () => {
       expect(await multiRewards.rewardTokens(0)).to.be.equal(getAddress(rewardsToken.address))
       expect(await multiRewards.rewardTokens(1)).to.be.equal(getAddress(anotherRewardsToken.address))
@@ -120,17 +106,17 @@ describe('MultiRewards', function () {
     });
   });
 
-  xdescribe('Function permissions', () => {
-    // const rewardValue = expandTo18Decimals(1.0);
+  describe('Function permissions', () => {
     const rewardValue = BigNumber.from(1);
 
     before(async () => {
+      await replaceRewards(5)
       // @ts-ignore
-      let deployerConnectedRewardsTokenContract = rewardsToken.connect(deployer)
-      await deployerConnectedRewardsTokenContract.transfer(multiRewards.address, BigNumber.from(1));
+      let ownerConnectedRewardsTokenContract = rewardsToken.connect(owner)
+      await ownerConnectedRewardsTokenContract.transfer(multiRewards.address, BigNumber.from(1));
     });
 
-    xit('only rewardsDistribution address can call notifyRewardAmount', async () => {
+    it('only rewardsDistribution address can call notifyRewardAmount', async () => {
       const data = await multiRewards.rewardData(getAddress(rewardsToken.address));
 
       // @ts-ignore
@@ -147,17 +133,17 @@ describe('MultiRewards', function () {
     });
 
     it('only owner address can call setRewardsDuration', async () => {
-      await fastForward(2 * DAY);
+      await fastForward(6 * DAY);
       await onlyGivenAddressCanInvoke({
         contract: multiRewards,
         fnc: "setRewardsDuration",
-        args: [getAddress(rewardsToken.address), 70],
+        args: [getAddress(rewardsToken.address), 21],
         address: owner,
         accounts,
       });
     });
 
-    xit('only owner address can call setPaused', async () => {
+    it('only owner address can call setPaused', async () => {
       await onlyGivenAddressCanInvoke({
         contract: multiRewards,
         fnc: "setPaused",
@@ -165,12 +151,25 @@ describe('MultiRewards', function () {
         address: owner,
         accounts,
       });
+
+      await onlyGivenAddressCanInvoke({
+        contract: multiRewards,
+        fnc: "setPaused",
+        args: [false],
+        address: owner,
+        accounts,
+      });
     });
   });
 
-  xdescribe('Pausable', async () => {
+  describe('Pausable', async () => {
     let ownerMultiRewards: Contract, stakingAccountMultiRewards: Contract,
       ownerStakingToken: Contract, stakingAccountStakingToken: Contract;
+
+    before(async () => {
+      await replaceRewards(2)
+    })
+
     beforeEach(async () => {
       // @ts-ignore
       ownerMultiRewards = multiRewards.connect(owner)
