@@ -6,6 +6,8 @@ import { BigNumber, Contract, hethers } from '@hashgraph/hethers';
 import getAddress = hethers.utils.getAddress;
 import {expect} from "chai";
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { Utils } from '../../utils/utils';
+import expandTo18Decimals = Utils.expandTo18Decimals;
 const deployMintERC20 = require('../../scripts/utils/deploy-mint-erc20');
 const deployMultiRewards = require('../../scripts/01-deploy');
 const addRewards = require('../../scripts/addRewards-with-contract');
@@ -71,9 +73,9 @@ describe('MultiRewards', function () {
       // @ts-ignore
     ] = accounts
 
-    stakingToken = await deployMintERC20(owner.address, 10000, "Staking Token", "STKN");
-    rewardsToken = await deployMintERC20(owner.address, 10000, "External Rewards Token", "MOAR");
-    anotherRewardsToken = await deployMintERC20(owner.address, 10000, "External Rewards Token 2", "MOAR2");
+    stakingToken = await deployMintERC20(owner.address, 10000000, "Staking Token", "STKN");
+    rewardsToken = await deployMintERC20(owner.address, 10000000, "External Rewards Token", "MOAR");
+    anotherRewardsToken = await deployMintERC20(owner.address, 10000000, "External Rewards Token 2", "MOAR2");
 
     multiRewards = await deployMultiRewards(owner.address, stakingToken.address)
 
@@ -81,8 +83,8 @@ describe('MultiRewards', function () {
     ownerMultiRewards = multiRewards.connect(owner)
 
     // TODO: Figure out parameters here
-    await addRewards(ownerMultiRewards, rewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY)
-    await addRewards(ownerMultiRewards, anotherRewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY)
+    await addRewards(ownerMultiRewards, rewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY * 10)
+    await addRewards(ownerMultiRewards, anotherRewardsToken.address, getAddress(mockRewardsDistributionAddress.address), DAY * 10)
   });
 
   xit('ensure only known functions are mutative', () => {
@@ -166,7 +168,7 @@ describe('MultiRewards', function () {
     });
   });
 
-  describe('Pausable', async () => {
+  xdescribe('Pausable', async () => {
     let ownerMultiRewards: Contract, stakingAccountMultiRewards: Contract,
       ownerStakingToken: Contract, stakingAccountStakingToken: Contract;
     beforeEach(async () => {
@@ -639,7 +641,9 @@ describe('MultiRewards', function () {
       ownerStakingToken: Contract,
       stakingAccountStakingToken: Contract,
       stakingAccountMultiRewards: Contract,
-      ownerRewardsToken: Contract
+      ownerRewardsToken: Contract,
+      rewardsDistributionRewardsToken: Contract,
+      rewardsDistributionMultiRewards: Contract
 
     before(async () => {
       // @ts-ignore
@@ -648,89 +652,106 @@ describe('MultiRewards', function () {
       ownerStakingToken = stakingToken.connect(owner)
       // @ts-ignore
       ownerRewardsToken = rewardsToken.connect(owner)
+
+      // @ts-ignore
+      rewardsDistributionRewardsToken = rewardsToken.connect(mockRewardsDistributionAddress)
+      // @ts-ignore
+      rewardsDistributionMultiRewards = multiRewards.connect(mockRewardsDistributionAddress)
+
       // @ts-ignore
       stakingAccountMultiRewards = multiRewards.connect(stakingAccount1)
       // @ts-ignore
       stakingAccountStakingToken = stakingToken.connect(stakingAccount1)
 
       // Set rewardDistribution address
-      await ownerMultiRewards.setRewardsDistribution(rewardsDistribution.address);
-      assert.equal(await multiRewards.rewardsDistribution(), rewardsDistribution.address);
-
-      // await setRewardsTokenExchangeRate();
+      await ownerMultiRewards.setRewardsDistributor(getAddress(stakingToken.address), getAddress(mockRewardsDistributionAddress.address));
+      const rewardData = await multiRewards.rewardData(getAddress(stakingToken.address))
+      assert.equal(rewardData.rewardsDistributor, getAddress(mockRewardsDistributionAddress.address));
     });
 
     it('stake and claim', async () => {
       // Transfer some LP Tokens to user
       const totalToStake = BigNumber.from('500');
-      await ownerStakingToken.transfer(stakingAccount1, totalToStake);
+      console.log(`Give staking account [${getAddress(stakingAccount1.address)}] ${totalToStake.toString()} of ${getAddress(stakingToken.address)} tokens.`)
+      await ownerStakingToken.transfer(getAddress(stakingAccount1.address), totalToStake);
 
       // Stake LP Tokens
-      await stakingAccountStakingToken.approve(multiRewards.address, totalToStake);
+      console.log(`Staking account [${getAddress(stakingAccount1.address)}] approves ${getAddress(multiRewards.address)} to transfer ${totalToStake.toString()} of ${getAddress(stakingToken.address)} tokens.`)
+      await stakingAccountStakingToken.approve(getAddress(multiRewards.address), hethers.constants.MaxUint256);
+
+      console.log(`Staking account [${getAddress(stakingAccount1.address)}] stakes ${totalToStake.toString()} of ${getAddress(stakingToken.address)} tokens to ${getAddress(multiRewards.address)}.`)
       await stakingAccountMultiRewards.stake(totalToStake);
 
       // Distribute some rewards
-      // TODO: Figure out rewards distribution contract....
       const totalToDistribute = BigNumber.from('35000');
-      // assert.equal(await rewardsDistribution.distributionsLength(), 0);
-      // await rewardsDistribution.addRewardDistribution(multiRewards.address, totalToDistribute, {
-      //   from: owner,
-      // });
-      // assert.equal(await rewardsDistribution.distributionsLength(), 1);
+
+      console.log(`Give distribution account [${getAddress(mockRewardsDistributionAddress.address)}] ${totalToDistribute.toString()} of ${getAddress(rewardsToken.address)} reward tokens.`)
 
       // Transfer Rewards to the RewardsDistribution contract address
-      await ownerRewardsToken.transfer(rewardsDistribution.address, totalToDistribute);
+      await ownerRewardsToken.transfer(getAddress(mockRewardsDistributionAddress.address), totalToDistribute);
 
-      // TODO: Figure out rewards distribution contract....
-      // Distribute Rewards called from Synthetix contract as the authority to distribute
-      // await rewardsDistribution.distributeRewards(totalToDistribute, {
-      //   from: authority,
-      // });
+      console.log(`Distribution account [${getAddress(mockRewardsDistributionAddress.address)}] approves ${getAddress(multiRewards.address)} to transfer ${totalToDistribute.toString()} of ${getAddress(rewardsToken.address)} reward tokens.`)
+      await rewardsDistributionRewardsToken.approve(getAddress(multiRewards.address), totalToDistribute);
 
-      // Period finish should be ~7 days from now
-      const periodFinish = await multiRewards.periodFinish();
-      // TODO: Figure out this assertion
-      // const curTimestamp = await currentTime();
-      // assert.equal(parseInt(periodFinish.toString(), 10), curTimestamp + DAY * 7);
+      console.log(`Distribution account [${getAddress(mockRewardsDistributionAddress.address)}] notifies reward amount ${totalToDistribute.toString()} of ${getAddress(rewardsToken.address)} rewards token.`)
+      await rewardsDistributionMultiRewards.notifyRewardAmount(rewardsToken.address, totalToDistribute);
 
-      // Reward duration is 7 days, so we'll
-      // Fastforward time by 6 days to prevent expiration
-      await fastForward(DAY * 6);
+      // Period finish should be ~10 days from now
+      const rd = await multiRewards.rewardData(getAddress(rewardsToken.address));
+      console.log(`Period finish for ${getAddress(rewardsToken.address)} token campaign is ${rd.periodFinish}`)
+
+      console.log(`Wait 5 "days"`);
+      await fastForward(5 * DAY);
 
       // Reward rate and reward per token
-      const rewardRate = await multiRewards.rewardRate();
-      // TODO: Figure out rewards big number assertion/comparison
-      assert.bnGt(rewardRate, ZERO_BN);
+      const rewardData = await multiRewards.rewardData(getAddress(rewardsToken.address));
+      const rewardRate = rewardData.rewardRate;
+      console.log(`Reward rate is ${rewardRate}`);
+      expect(rewardRate.gt(BigNumber.from('0'))).to.be.true
 
-      const rewardPerToken = await multiRewards.rewardPerToken();
-      // TODO: Figure out rewards big number assertion/comparison
-      assert.bnGt(rewardPerToken, ZERO_BN);
+      const rewardPerToken = await multiRewards.rewardPerToken(getAddress(rewardsToken.address));
+      console.log(`Reward per token is ${rewardPerToken}`);
+      expect(rewardPerToken.gt(BigNumber.from('0'))).to.be.true
 
       // Make sure we earned in proportion to reward per token
-      const rewardRewardsEarned = await multiRewards.earned(stakingAccount1);
-      assert.bnEqual(rewardRewardsEarned, rewardPerToken.mul(totalToStake).div(toUnit(1)));
+      const rewardRewardsEarned = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
+      const expectedRewardsEarned = rewardPerToken.mul(totalToStake).div(expandTo18Decimals(1));
+      console.log(`Actual rewards earned: ${rewardRewardsEarned}, expected: ${expectedRewardsEarned}`)
+      expect(rewardRewardsEarned).to.be.equal(expectedRewardsEarned);
 
       // Make sure after withdrawing, we still have the ~amount of rewardRewards
       // The two values will be a bit different as time has "passed"
-      const initialWithdraw = toUnit('100');
+      const initialWithdraw = BigNumber.from(100);
       await stakingAccountMultiRewards.withdraw(initialWithdraw);
-      assert.bnEqual(initialWithdraw, await stakingToken.balanceOf(stakingAccount1));
+      const stakingAccountBalance = await stakingToken.balanceOf(getAddress(stakingAccount1.address));
 
-      const rewardRewardsEarnedPostWithdraw = await multiRewards.earned(stakingAccount1);
-      assert.bnClose(rewardRewardsEarned, rewardRewardsEarnedPostWithdraw, toUnit('0.1'));
+      console.log(`Initial withdraw: ${initialWithdraw}, expected staking account balance: ${stakingAccountBalance}`)
+      expect(initialWithdraw).to.be.equal(stakingAccountBalance);
+
+      const rewardRewardsEarnedPostWithdraw = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
+
+      const variance = expandTo18Decimals(1).div(BigNumber.from(10))
+      assert.ok(
+        rewardRewardsEarned.gte(rewardRewardsEarnedPostWithdraw.sub(variance)),
+        `${rewardRewardsEarned} !~= ${rewardRewardsEarnedPostWithdraw} (maxVariance ${variance}`
+      );
+      assert.ok(
+        rewardRewardsEarned.lte(rewardRewardsEarnedPostWithdraw.add(variance)),
+        `${rewardRewardsEarned} !~= ${rewardRewardsEarnedPostWithdraw} (maxVariance ${variance}`
+      );
 
       // Get rewards
-      const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
+      const initialRewardBal = await rewardsToken.balanceOf(getAddress(stakingAccount1.address));
       await stakingAccountMultiRewards.getReward();
-      const postRewardRewardBal = await rewardsToken.balanceOf(stakingAccount1);
+      const postRewardRewardBal = await rewardsToken.balanceOf(getAddress(stakingAccount1.address));
 
-      assert.bnGt(postRewardRewardBal, initialRewardBal);
+      expect(postRewardRewardBal.gt(initialRewardBal)).to.be.true;
 
       // Exit
-      const preExitLPBal = await stakingToken.balanceOf(stakingAccount1);
+      const preExitLPBal = await stakingToken.balanceOf(stakingAccount1.address);
       await stakingAccountMultiRewards.exit();
-      const postExitLPBal = await stakingToken.balanceOf(stakingAccount1);
-      assert.bnGt(postExitLPBal, preExitLPBal);
+      const postExitLPBal = await stakingToken.balanceOf(stakingAccount1.address);
+      expect(postExitLPBal.gt(preExitLPBal)).to.be.true;
     });
   });
 });
