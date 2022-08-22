@@ -35,7 +35,7 @@ jobs:
         run: npm install
 
       - name: Populate proper local network configuration
-        run: cp ./config.sample.ts ./config.ts
+        run: cp ./example.config.ts ./config.ts
 
       - name: Compile all contracts
         run: npx hardhat compile
