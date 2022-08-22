@@ -209,6 +209,7 @@ describe('MultiRewards', function () {
     const amount = expandTo18Decimals(5000);
     before(async () => {
       await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
     })
 
     beforeEach(async () => {
@@ -343,19 +344,19 @@ describe('MultiRewards', function () {
   });
 
   // The above are DONE
-  xdescribe('earned()', () => {
+  describe('earned()', () => {
     before(async () => {
       await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 5)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
     })
 
     it('should be 0 when not staking', async () => {
-      expect(await multiRewards.earned(stakingAccount1)).to.be.eq(ZERO_BN);
+      expect(await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address))).to.be.eq(ZERO_BN);
     });
 
     it('should be > 0 when staking', async () => {
       const totalToStake = expandTo18Decimals(100);
-      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
       await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
@@ -365,7 +366,7 @@ describe('MultiRewards', function () {
 
       await fastForward(DAY);
 
-      const earned = await multiRewards.earned(stakingAccount1);
+      const earned = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
 
       expect(earned.gt(ZERO_BN)).to.be.true;
     });
@@ -374,12 +375,12 @@ describe('MultiRewards', function () {
       const totalToDistribute = expandTo18Decimals(5000);
 
       await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
-      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(getAddress(rewardsToken.address), totalToDistribute);
 
       const rewardRateInitial = await multiRewards.rewardRate();
 
       await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
-      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(getAddress(rewardsToken.address), totalToDistribute);
 
       const rewardRateLater = await multiRewards.rewardRate();
 
@@ -391,7 +392,7 @@ describe('MultiRewards', function () {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
 
-      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
       await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
@@ -399,14 +400,14 @@ describe('MultiRewards', function () {
       await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
 
       await fastForward(DAY * 7);
-      const earnedFirst = await multiRewards.earned(stakingAccount1);
+      const earnedFirst = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
 
       // await setRewardsTokenExchangeRate();
       await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
-      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(getAddress(rewardsToken.address), totalToDistribute);
 
       await fastForward(DAY * 7);
-      const earnedSecond = await multiRewards.earned(stakingAccount1);
+      const earnedSecond = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
 
       expect(earnedSecond).to.be.eq(earnedFirst.add(earnedFirst));
     });
@@ -422,20 +423,20 @@ describe('MultiRewards', function () {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
 
-      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
       await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
       await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
-      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(getAddress(rewardsToken.address), totalToDistribute);
 
       await fastForward(DAY);
 
       const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
-      const initialEarnedBal = await multiRewards.earned(stakingAccount1);
+      const initialEarnedBal = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
       await call(stakingAccount1, multiRewards).getReward();
-      const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
-      const postEarnedBal = await multiRewards.earned(stakingAccount1);
+      const postRewardBal = await rewardsToken.balanceOf(getAddress(stakingAccount1.address));
+      const postEarnedBal = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
 
       expect(postEarnedBal.lt(initialEarnedBal)).to.be.true;
       expect(postRewardBal.gt(initialRewardBal)).to.be.true;
@@ -600,10 +601,10 @@ describe('MultiRewards', function () {
       await fastForward(DAY);
 
       const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
-      const initialEarnedBal = await multiRewards.earned(stakingAccount1);
+      const initialEarnedBal = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
       await multiRewards.exit({ from: stakingAccount1 });
       const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
-      const postEarnedBal = await multiRewards.earned(stakingAccount1);
+      const postEarnedBal = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
 
       assert.bnLt(postEarnedBal, initialEarnedBal);
       assert.bnGt(postRewardBal, initialRewardBal);
