@@ -1,4 +1,4 @@
-pragma solidity 0.5.16;
+pragma solidity 0.5.17;
 
 library Address {
   /**
@@ -579,7 +579,7 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     );
 
     emit RewardSent(reward);
-    emit RewardTokenSnapshot(_totalSupply, _rewardsToken, reward, rewardData[_rewardsToken].rewardsDuration);
+    emit RewardTokenSnapshot(_rewardsToken, reward, rewardData[_rewardsToken].rewardsDuration);
   }
 
   // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
@@ -630,6 +630,6 @@ contract MultiRewards is ReentrancyGuard, Pausable {
   // emitted whenever a user interacts with the contract and changes his stake
   event AccountStakeSnapshot(address user, uint256 currentStake);
 
-  event RewardTokenSnapshot(uint256 totalSupply, address rewardsTokenAddress, uint256 rewardsTokenSupply, uint256 remainingTotalDuration);
+  event RewardTokenSnapshot(address rewardsTokenAddress, uint256 rewardsTokenSupply, uint256 remainingTotalDuration);
   event SupplySnapshot(uint256 totalSupply);
 }
