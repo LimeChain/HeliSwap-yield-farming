@@ -1,0 +1,47 @@
+name: Unit Tests
+
+on: [push]
+
+jobs:
+  unit-tests:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Cache node_modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+
+      - name: Install hedera-local node globally
+        run: npm install -g git://github.com/hashgraph/hedera-local-node.git#main
+
+      - name: Start hedera-local node with 10 accounts
+        run: npx hedera-local restart --accounts=10
+
+      - name: Install all dependencies
+        run: npm install
+
+      - name: Populate proper local network configuration
+        run: cp ./config.sample.ts ./config.ts
+
+      - name: Compile all contracts
+        run: npx hardhat compile
+
+      - name: Run all unit tests
+        run: npx hardhat test
+
+      - name: Stop local hedera network
+        run: npx hedera-local stop
