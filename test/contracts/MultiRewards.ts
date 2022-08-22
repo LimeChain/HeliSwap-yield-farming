@@ -549,7 +549,7 @@ describe('MultiRewards', function () {
     it('should increase rewards token balance', async () => {
       const totalToDistribute = expandTo18Decimals(5000);
       await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
-      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(getAddress(rewardsToken.address), totalToDistribute);
 
       const rewardForDuration = await multiRewards.getRewardForDuration(getAddress(rewardsToken.address));
 
@@ -574,17 +574,17 @@ describe('MultiRewards', function () {
 
     it('should increases lp token balance and decreases staking balance', async () => {
       const totalToStake = expandTo18Decimals(100);
-      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
       await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
-      const initialStakingTokenBal = await stakingToken.balanceOf(stakingAccount1);
-      const initialStakeBal = await multiRewards.balanceOf(stakingAccount1);
+      const initialStakingTokenBal = await stakingToken.balanceOf(getAddress(stakingAccount1.address));
+      const initialStakeBal = await multiRewards.balanceOf(getAddress(stakingAccount1.address));
 
       await call(stakingAccount1, multiRewards).withdraw(totalToStake);
 
-      const postStakingTokenBal = await stakingToken.balanceOf(stakingAccount1);
-      const postStakeBal = await multiRewards.balanceOf(stakingAccount1);
+      const postStakingTokenBal = await stakingToken.balanceOf(getAddress(stakingAccount1.address));
+      const postStakeBal = await multiRewards.balanceOf(getAddress(stakingAccount1.address));
 
       expect(postStakeBal.add(totalToStake)).to.be.eq(initialStakeBal);
       expect(initialStakingTokenBal.add(totalToStake)).to.be.eq(postStakingTokenBal);
@@ -605,7 +605,7 @@ describe('MultiRewards', function () {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
 
-      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
       await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
@@ -614,10 +614,10 @@ describe('MultiRewards', function () {
 
       await fastForward(DAY);
 
-      const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
+      const initialRewardBal = await rewardsToken.balanceOf(getAddress(stakingAccount1.address));
       const initialEarnedBal = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
       await call(stakingAccount1, multiRewards).exit();
-      const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
+      const postRewardBal = await rewardsToken.balanceOf(getAddress(stakingAccount1.address));
       const postEarnedBal = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
 
       expect(postEarnedBal.lt(initialEarnedBal)).to.be.true;
@@ -631,7 +631,7 @@ describe('MultiRewards', function () {
       await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
 
-      await call(owner, multiRewards).setRewardsDistributor(getAddress(rewardsToken.address), mockRewardsDistributionAddress);
+      await call(owner, multiRewards).setRewardsDistributor(getAddress(rewardsToken.address), getAddress(mockRewardsDistributionAddress.address));
     });
 
     it('Reverts if the provided reward is greater than the balance.', async () => {
