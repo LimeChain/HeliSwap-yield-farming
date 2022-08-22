@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.5.16;
 
 library Address {
   /**
@@ -451,7 +451,7 @@ contract MultiRewards is ReentrancyGuard, Pausable {
 
     optimisticAssociation(_rewardsToken);
 
-    emit RewardAdded(address(this), _rewardsToken, _rewardsDuration);
+    emit RewardAdded(_rewardsToken, _rewardsDuration);
   }
 
   /* ========== VIEWS ========== */
@@ -509,7 +509,8 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     _balances[msg.sender] = _balances[msg.sender].add(amount);
     stakingToken.safeTransferFrom(msg.sender, address(this), amount);
 
-    emit Staked(msg.sender, amount);
+    emit AccountStakeSnapshot(msg.sender, _balances[msg.sender], 0);
+    emit SupplySnapshot(totalSupply);
   }
 
   function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
@@ -518,7 +519,8 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     _balances[msg.sender] = _balances[msg.sender].sub(amount);
     stakingToken.safeTransfer(msg.sender, amount);
 
-    emit Withdrawn(msg.sender, amount);
+    emit AccountStakeSnapshot(msg.sender, _balances[msg.sender], amount);
+    emit SupplySnapshot(totalSupply);
   }
 
   function getReward() public nonReentrant updateReward(msg.sender) {
@@ -576,7 +578,8 @@ contract MultiRewards is ReentrancyGuard, Pausable {
       rewardData[_rewardsToken].rewardsDuration
     );
 
-    emit RewardSent(address(this), reward);
+    emit RewardSent(reward);
+    emit RewardTokenSnapshot(_totalSupply, _rewardsToken, reward, rewardData[_rewardsToken].rewardsDuration);
   }
 
   // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
@@ -618,11 +621,15 @@ contract MultiRewards is ReentrancyGuard, Pausable {
 
   /* ========== EVENTS ========== */
 
-  event RewardAdded(address indexed campaignAddress, address rewardAdress, uint256 rewardDuration);
-  event RewardSent(address indexed campaignAddress, uint256 reward);
-  event Staked(address indexed user, uint256 amount);
-  event Withdrawn(address indexed user, uint256 amount);
+  event RewardAdded(address rewardTokenAddress, uint256 rewardDuration);
+  event RewardSent(uint256 reward);
   event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
   event RewardsDurationUpdated(address indexed campaignAddress, address token, uint256 newDuration);
   event Recovered(address token, uint256 amount);
+
+  // emitted whenever a user interacts with the contract and changes his stake
+  event AccountStakeSnapshot(address user, uint256 currentStake, uint256 withdrawnNow);
+
+  event RewardTokenSnapshot(uint256 totalSupply, address rewardsTokenAddress, uint256 rewardsTokenSupply, uint256 remainingTotalDuration);
+  event SupplySnapshot(uint256 totalSupply);
 }
