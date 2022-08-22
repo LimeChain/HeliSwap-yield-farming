@@ -469,7 +469,7 @@ describe('MultiRewards', function () {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
 
-      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
       await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
@@ -486,7 +486,7 @@ describe('MultiRewards', function () {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
 
-      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
       await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
@@ -511,12 +511,12 @@ describe('MultiRewards', function () {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
 
-      await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
-      await stakingToken.approve(multiRewards.address, totalToStake, { from: stakingAccount1 });
-      await multiRewards.stake(totalToStake, { from: stakingAccount1 });
+      await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
+      await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
+      await call(stakingAccount1, multiRewards).stake(totalToStake);
 
-      await rewardsToken.transfer(multiRewards.address, totalToDistribute, { from: owner });
-      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
+      await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(getAddress(rewardsToken.address), totalToDistribute);
 
       await fastForward(DAY * 4);
       await call(stakingAccount1, multiRewards).getReward(getAddress(rewardsToken.address));
