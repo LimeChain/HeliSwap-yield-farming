@@ -509,8 +509,8 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     _balances[msg.sender] = _balances[msg.sender].add(amount);
     stakingToken.safeTransferFrom(msg.sender, address(this), amount);
 
-    emit AccountStakeSnapshot(msg.sender, _balances[msg.sender], 0);
-    emit SupplySnapshot(totalSupply);
+    emit AccountStakeSnapshot(msg.sender, _balances[msg.sender]);
+    emit SupplySnapshot(_totalSupply);
   }
 
   function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
@@ -519,8 +519,8 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     _balances[msg.sender] = _balances[msg.sender].sub(amount);
     stakingToken.safeTransfer(msg.sender, amount);
 
-    emit AccountStakeSnapshot(msg.sender, _balances[msg.sender], amount);
-    emit SupplySnapshot(totalSupply);
+    emit AccountStakeSnapshot(msg.sender, _balances[msg.sender]);
+    emit SupplySnapshot(_totalSupply);
   }
 
   function getReward() public nonReentrant updateReward(msg.sender) {
@@ -628,7 +628,7 @@ contract MultiRewards is ReentrancyGuard, Pausable {
   event Recovered(address token, uint256 amount);
 
   // emitted whenever a user interacts with the contract and changes his stake
-  event AccountStakeSnapshot(address user, uint256 currentStake, uint256 withdrawnNow);
+  event AccountStakeSnapshot(address user, uint256 currentStake);
 
   event RewardTokenSnapshot(uint256 totalSupply, address rewardsTokenAddress, uint256 rewardsTokenSupply, uint256 remainingTotalDuration);
   event SupplySnapshot(uint256 totalSupply);
