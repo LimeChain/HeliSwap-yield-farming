@@ -110,7 +110,7 @@ module.exports = {
       },
     ],
   },
-  defaultNetwork: 'testnet',
+  defaultNetwork: 'local',
   hedera: {
     networks: config.networks,
     gasLimit: 2_000_000,
