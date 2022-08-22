@@ -412,30 +412,33 @@ describe('MultiRewards', function () {
     });
   });
 
-  xdescribe('getReward()', () => {
+  describe('getReward()', () => {
+    before(async () => {
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 5)
+      await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
+    })
+
     it('should increase rewards token balance', async () => {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
 
-      await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
-      await stakingToken.approve(multiRewards.address, totalToStake, { from: stakingAccount1 });
-      await multiRewards.stake(totalToStake, { from: stakingAccount1 });
+      await call(owner, stakingToken).transfer(stakingAccount1, totalToStake);
+      await call(stakingAccount1, stakingToken).approve(multiRewards.address, totalToStake);
+      await call(stakingAccount1, multiRewards).stake(totalToStake);
 
-      await rewardsToken.transfer(multiRewards.address, totalToDistribute, { from: owner });
-      await multiRewards.notifyRewardAmount(totalToDistribute, {
-        from: mockRewardsDistributionAddress,
-      });
+      await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(totalToDistribute);
 
       await fastForward(DAY);
 
       const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
       const initialEarnedBal = await multiRewards.earned(stakingAccount1);
-      await multiRewards.getReward({ from: stakingAccount1 });
+      await call(stakingAccount1, multiRewards).getReward();
       const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
       const postEarnedBal = await multiRewards.earned(stakingAccount1);
 
-      assert.bnLt(postEarnedBal, initialEarnedBal);
-      assert.bnGt(postRewardBal, initialRewardBal);
+      expect(postEarnedBal.lt(initialEarnedBal)).to.be.true;
+      expect(postRewardBal.gt(initialRewardBal)).to.be.true;
     });
   });
 
