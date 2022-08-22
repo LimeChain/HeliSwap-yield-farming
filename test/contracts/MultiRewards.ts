@@ -1,14 +1,14 @@
 import hardhat from "hardhat";
 
-import {expect} from "chai";
-import { Utils } from '../../utils/utils';
-import getAddress = hethers.utils.getAddress;
-import expandTo18Decimals = Utils.expandTo18Decimals;
-const deployMultiRewards = require('../../scripts/01-deploy');
 import { BigNumber, Contract, hethers } from '@hashgraph/hethers';
-const addRewards = require('../../scripts/addRewards-with-contract');
+import getAddress = hethers.utils.getAddress;
+import {expect} from "chai";
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { Utils } from '../../utils/utils';
+import expandTo18Decimals = Utils.expandTo18Decimals;
 const deployMintERC20 = require('../../scripts/utils/deploy-mint-erc20');
+const deployMultiRewards = require('../../scripts/01-deploy');
+const addRewards = require('../../scripts/addRewards-with-contract');
 
 const { onlyGivenAddressCanInvoke } = require('./helpers');
 const { assert } = require('./common');
