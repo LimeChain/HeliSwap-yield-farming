@@ -610,7 +610,7 @@ describe('MultiRewards', function () {
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
       await call(owner, rewardsToken).transfer(multiRewards.address, totalToDistribute);
-      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(expandTo18Decimals(5000.0));
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(expandTo18Decimals(5000));
 
       await fastForward(DAY);
 
@@ -626,48 +626,32 @@ describe('MultiRewards', function () {
     });
   });
 
-  // xdescribe('notifyRewardAmount()', () => {
-  //   let localStakingRewards: Contract;
-  //
-  //   before(async () => {
-  //     localStakingRewards = await setupContract({
-  //       accounts,
-  //       contract: 'StakingRewards',
-  //       args: [owner, rewardsDistribution.address, rewardsToken.address, stakingToken.address],
-  //     });
-  //
-  //     await localStakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-  //       from: owner,
-  //     });
-  //   });
-  //
-  //   it('Reverts if the provided reward is greater than the balance.', async () => {
-  //     const rewardValue = expandTo18Decimals(1000);
-  //     await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
-  //     await assert.revert(
-  //       localStakingRewards.notifyRewardAmount(rewardValue.add(expandTo18Decimals(0.1)), {
-  //         from: mockRewardsDistributionAddress,
-  //       }),
-  //       'Provided reward too high'
-  //     );
-  //   });
-  //
-  //   it('Reverts if the provided reward is greater than the balance, plus rolled-over balance.', async () => {
-  //     const rewardValue = expandTo18Decimals(1000);
-  //     await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
-  //     localStakingRewards.notifyRewardAmount(rewardValue, {
-  //       from: mockRewardsDistributionAddress,
-  //     });
-  //     await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
-  //     // Now take into account any leftover quantity.
-  //     await assert.revert(
-  //       localStakingRewards.notifyRewardAmount(rewardValue.add(expandTo18Decimals(0.1)), {
-  //         from: mockRewardsDistributionAddress,
-  //       }),
-  //       'Provided reward too high'
-  //     );
-  //   });
-  // });
+  describe('notifyRewardAmount()', () => {
+    before(async () => {
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
+
+      await call(owner, multiRewards).setRewardsDistributor(getAddress(rewardsToken.address), mockRewardsDistributionAddress);
+    });
+
+    it('Reverts if the provided reward is greater than the balance.', async () => {
+      const rewardValue = expandTo18Decimals(1000);
+      await call(owner, rewardsToken).transfer(multiRewards.address, rewardValue);
+      await assert.revert(
+        call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(rewardValue.add(expandTo18Decimals(1).div(10))));
+    });
+
+    it('Reverts if the provided reward is greater than the balance, plus rolled-over balance.', async () => {
+      const rewardValue = expandTo18Decimals(1000);
+      await call(owner, rewardsToken).transfer(multiRewards.address, rewardValue);
+      await call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(getAddress(rewardsToken.address), rewardValue);
+      await call(owner, rewardsToken).transfer(multiRewards.address, rewardValue);
+      // Now take into account any leftover quantity.
+      await assert.revert(
+        call(mockRewardsDistributionAddress, multiRewards).notifyRewardAmount(rewardValue.add(expandTo18Decimals(1).div(10)))
+      );
+    });
+  });
 
   // TODO: add another staking token to E2E test
   describe('Integration Tests', () => {
