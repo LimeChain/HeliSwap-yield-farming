@@ -176,7 +176,7 @@ describe('MultiRewards', function () {
 
   describe('Pausable', async () => {
     before(async () => {
-      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 7)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
     })
 
@@ -208,7 +208,7 @@ describe('MultiRewards', function () {
 
     const amount = expandTo18Decimals(5000);
     before(async () => {
-      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 7)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
     })
 
@@ -542,7 +542,7 @@ describe('MultiRewards', function () {
 
   describe('getRewardForDuration()', () => {
     before(async () => {
-      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 7)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
     })
 
@@ -564,7 +564,7 @@ describe('MultiRewards', function () {
 
   describe('withdraw()', () => {
     before(async () => {
-      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 7)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
     })
 
@@ -597,7 +597,7 @@ describe('MultiRewards', function () {
 
   describe('exit()', () => {
     before(async () => {
-      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 7)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
     })
 
@@ -628,7 +628,7 @@ describe('MultiRewards', function () {
 
   describe('notifyRewardAmount()', () => {
     before(async () => {
-      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 2)
+      await redeploy(accounts, [rewardsToken, anotherRewardsToken], stakingToken, 7)
       await reconnect([rewardsToken, anotherRewardsToken, stakingToken, externalRewardsToken, multiRewards], accounts)
 
       await call(owner, multiRewards).setRewardsDistributor(getAddress(rewardsToken.address), getAddress(mockRewardsDistributionAddress.address));
@@ -667,7 +667,7 @@ describe('MultiRewards', function () {
 
     it('stake and claim', async () => {
       // Transfer some LP Tokens to user
-      const totalToStake = BigNumber.from('500');
+      const totalToStake = expandTo18Decimals(500);
       console.log(`Give staking account [${getAddress(stakingAccount1.address)}] ${totalToStake.toString()} of ${getAddress(stakingToken.address)} tokens.`)
       await call(owner, stakingToken).transfer(getAddress(stakingAccount1.address), totalToStake);
 
@@ -679,7 +679,7 @@ describe('MultiRewards', function () {
       await call(stakingAccount1, multiRewards).stake(totalToStake);
 
       // Distribute some rewards
-      const totalToDistribute = BigNumber.from('35000');
+      const totalToDistribute = expandTo18Decimals(35000);
 
       console.log(`Give distribution account [${getAddress(mockRewardsDistributionAddress.address)}] ${totalToDistribute.toString()} of ${getAddress(rewardsToken.address)} reward tokens.`)
 
@@ -726,7 +726,7 @@ describe('MultiRewards', function () {
 
       const rewardRewardsEarnedPostWithdraw = await multiRewards.earned(getAddress(stakingAccount1.address), getAddress(rewardsToken.address));
 
-      const variance = expandTo18Decimals(1).div(BigNumber.from(10))
+      const variance = expandTo18Decimals(10)
       assert.ok(
         rewardRewardsEarned.gte(rewardRewardsEarnedPostWithdraw.sub(variance)),
         `${rewardRewardsEarned} !~= ${rewardRewardsEarnedPostWithdraw} (maxVariance ${variance}`
