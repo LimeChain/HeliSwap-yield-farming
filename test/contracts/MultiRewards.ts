@@ -7,7 +7,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Utils } from '../../utils/utils';
 import expandTo18Decimals = Utils.expandTo18Decimals;
 const deployMintERC20 = require('../../scripts/utils/deploy-mint-erc20');
-const deployMultiRewards = require('../../scripts/01-deploy');
+const deployMultiRewardsFactory = require('../../scripts/01-deploy-factory');
+const deployMultiRewardsFromFactory = require('../../scripts/02-deploy-multi-reward-from-factory');
 const addRewards = require('../../scripts/addRewards-with-contract');
 
 const { onlyGivenAddressCanInvoke } = require('./helpers');
@@ -30,7 +31,7 @@ describe('MultiRewards', function () {
     deployer: SignerWithAddress;
 
   // Synthetix is the rewardsToken
-  let rewardsToken: Contract, anotherRewardsToken: Contract,
+  let mrFactory: Contract, rewardsToken: Contract, anotherRewardsToken: Contract,
     stakingToken: Contract,
     externalRewardsToken: Contract,
     multiRewards: Contract,
@@ -41,7 +42,13 @@ describe('MultiRewards', function () {
   const ZERO_BN = BigNumber.from(0);
 
   async function redeploy(accounts: SignerWithAddress[], tokens: Contract[], stakingToken: Contract, period: number) {
-    multiRewards = await deployMultiRewards(getAddress(owner.address), stakingToken.address)
+    let multiRewardsAddress = await deployMultiRewardsFromFactory(mrFactory.address, getAddress(owner.address), stakingToken.address)
+
+    // @ts-ignore
+    multiRewards = await hardhat.hethers.getContractAt(
+      'MultiRewards',
+      multiRewardsAddress,
+    );
 
     // @ts-ignore
     ownerMultiRewards = multiRewards.connect(owner)
@@ -91,6 +98,8 @@ describe('MultiRewards', function () {
       stakingAccount1,
       // @ts-ignore
     ] = accounts
+
+    mrFactory = await deployMultiRewardsFactory();
 
     stakingToken = await deployMintERC20(owner.address, tokenAmount.toString(), "Staking Token", "STKN");
 

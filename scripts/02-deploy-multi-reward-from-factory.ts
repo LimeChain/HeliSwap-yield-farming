@@ -5,7 +5,7 @@ async function deployMultiRewardsFromFactory(
   factoryAddress: string,
   owner: string,
   tokenAddress: string,
-) {
+): any {
   const MultiRewardsFactory = await hardhat.hethers.getContractAt(
     'MultiRewardsFactory',
     factoryAddress,
@@ -23,6 +23,8 @@ async function deployMultiRewardsFromFactory(
     multiRewardsContractCountNum - 1,
   );
   console.log('✅ MultiRewards contract deployed to:', newMultiRewardsContractAddress);
+
+  return newMultiRewardsContractAddress;
 }
 
 module.exports = deployMultiRewardsFromFactory;
