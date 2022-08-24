@@ -606,19 +606,24 @@ describe('MultiRewards', function () {
 
     const sevenDays = DAY * 7;
     const seventyDays = DAY * 70;
+
     it('should increase rewards duration before starting distribution', async () => {
       const rewardData = await multiRewards.rewardData(getAddress(rewardsToken.address));
       const defaultDuration = rewardData.rewardsDuration;
+
       expect(defaultDuration).to.be.eq(sevenDays);
 
-      await call(owner, multiRewards).setRewardsDuration(
+      await call(mockRewardsDistributionAddress, multiRewards).setRewardsDuration(
         getAddress(rewardsToken.address),
         seventyDays,
       );
+
       const newRewardData = await multiRewards.rewardData(getAddress(rewardsToken.address));
       const newDuration = newRewardData.rewardsDuration;
+
       expect(newDuration).to.be.eq(seventyDays);
     });
+
     it('should revert when setting setRewardsDuration before the period has finished', async () => {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
@@ -639,6 +644,7 @@ describe('MultiRewards', function () {
         call(owner, multiRewards).setRewardsDuration(getAddress(rewardsToken.address), seventyDays),
       );
     });
+
     it('should update when setting setRewardsDuration after the period has finished', async () => {
       const totalToStake = expandTo18Decimals(100);
       const totalToDistribute = expandTo18Decimals(5000);
