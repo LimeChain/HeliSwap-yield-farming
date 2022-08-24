@@ -134,12 +134,14 @@ describe('MultiRewards', function () {
       'Rewards Token',
       'MOAR',
     );
+
     anotherRewardsToken = await deployMintERC20(
       owner.address,
       tokenAmount.toString(),
       'Rewards Token 2',
       'MOAR2',
     );
+
     externalRewardsToken = await deployMintERC20(
       owner.address,
       tokenAmount.toString(),
