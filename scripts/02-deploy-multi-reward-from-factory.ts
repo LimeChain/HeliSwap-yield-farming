@@ -10,10 +10,10 @@ async function deployMultiRewardsFromFactory(
     'MultiRewardsFactory',
     factoryAddress,
   );
-
+  const signer = (await hardhat.hethers.getSigners())[0];
   console.log('⚙️ Deploying Multirewards contract ...');
 
-  const multiRewardsContractDeploy = await MultiRewardsFactory.deploy(owner, tokenAddress);
+  const multiRewardsContractDeploy = await MultiRewardsFactory.deploy(signer.address, tokenAddress);
   await multiRewardsContractDeploy.wait();
 
   const multiRewardsContractCount = await MultiRewardsFactory.getMultirewardsContractsCount();

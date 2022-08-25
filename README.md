@@ -71,3 +71,8 @@ Edit `--contractaddress`, `--rewardaddress`, `--rewardamount` and `--rewarddecim
 ```
 yarn sendReward
 ```
+
+
+## Notes:
+* The staking token must be ERC20 in order to avoid associations.
+* The reward tokens can be either. If they are ERC20 - we need an `approveERC20` script.

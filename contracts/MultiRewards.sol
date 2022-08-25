@@ -578,7 +578,6 @@ contract MultiRewards is ReentrancyGuard, Pausable {
       rewardData[_rewardsToken].rewardsDuration
     );
 
-    emit RewardSent(reward);
     emit RewardTokenSnapshot(_rewardsToken, reward, rewardData[_rewardsToken].rewardsDuration);
   }
 
@@ -622,7 +621,6 @@ contract MultiRewards is ReentrancyGuard, Pausable {
   /* ========== EVENTS ========== */
 
   event RewardAdded(address rewardTokenAddress, uint256 rewardDuration);
-  event RewardSent(uint256 reward);
   event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
   event RewardsDurationUpdated(address indexed campaignAddress, address token, uint256 newDuration);
   event Recovered(address token, uint256 amount);

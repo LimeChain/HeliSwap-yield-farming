@@ -1,7 +1,7 @@
 import '@nomicfoundation/hardhat-toolbox';
 require('@hashgraph/hardhat-hethers');
 import { task } from 'hardhat/config';
-import * as config from './config';
+import * as config from './example.config';
 
 task('deployFactory', 'Deploys an YF factory contract').setAction(async taskArgs => {
   const campaignFactoryDeployment = require('./scripts/01-deploy-factory');
@@ -87,11 +87,54 @@ task('approveToken', 'Approves an HTS token for spending by an account')
     );
   });
 
+task("stake", "Stakes tokens")
+  .addParam("contractaddress")
+  .addParam("amount")
+  .setAction(async taskArgs => {
+    const stake = require("./scripts/05-stake");
+    await stake(taskArgs.contractaddress, taskArgs.amount);
+  })
+
+task("withdraw")
+  .addParam("contractaddress")
+  .addParam("amount")
+  .setAction(async taskArgs => {
+    const withdraw = require("./scripts/06-withdraw");
+    await withdraw(taskArgs.contractaddress, taskArgs.amount);
+  })
+
+task("exit")
+  .addParam("contractaddress")
+  .setAction(async taskArgs => {
+    const exit = require("./scripts/07-exit");
+    await exit(taskArgs.contractaddress);
+  })
+
+task("approveERC20", "Approves tokens")
+  .addParam("tokenid")
+  .addParam("spender")
+  .addParam("amount")
+  .addParam("lender")
+  .addParam("lenderpk")
+  .setAction(async taskArgs => {
+    const approveERC20 = require("./scripts/utils/approveERC20");
+    await approveERC20(taskArgs.tokenid, taskArgs.spender, taskArgs.amount, taskArgs.lender, taskArgs.lenderpk);
+  })
+
 module.exports = {
   solidity: {
     compilers: [
       {
         version: '0.5.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.5.16',
         settings: {
           optimizer: {
             enabled: true,

@@ -5,12 +5,17 @@
   "main": "index.js",
   "scripts": {
     "deployFactory": "npx hardhat deployFactory",
-    "deployMultirewards": "npx hardhat deployMultirewards --factoryaddress 0x0000000000000000000000000000000002dbe1a7 --owner 0x00000000000000000000000000000000020cf0a3 --stakingtoken 0x32Abf27699EcE08F61dd05b5b8cfc35Db0b472D8",
+    "deployMultirewards": "npx hardhat deployMultirewards --factoryaddress 0x0000000000000000000000000000000002dc6d03 --owner 0.0.47795264 --stakingtoken 0x0000000000000000000000000000000002dc6fbe",
     "deploy": "npx hardhat deploy --owner 0x00000000000000000000000000000000020cf0a3 --stakingtoken 0x1165f6115eb38eD34E93B303f9388a901b6d47d4",
-    "addReward": "npx hardhat addReward --contractaddress 0x0000000000000000000000000000000002dBDB36 --rewardaddress 0x000000000000000000000000000000000215311b --rewarddistributor 0x00000000000000000000000000000000020cf0a3 --rewardduration 86400",
-    "sendReward": "npx hardhat sendReward --contractaddress 0x0000000000000000000000000000000002dB534A --rewardaddress 0x000000000000000000000000000000000215311b --rewardamount 1 --rewarddecimals 8",
-    "associateToken": "npx hardhat associateToken --accountid 0.0.34402467 --pk 0xaaedb59be1a2fa317fc4cbbcd017ca30360f0cd7a0d93f862de72f839420979b --tokenid 0.0.34741650",
-    "approveToken": "npx hardhat approveToken --accountid 0.0.34402467 --pk 0xaaedb59be1a2fa317fc4cbbcd017ca30360f0cd7a0d93f862de72f839420979b --spenderaccountid 0.0.47859427 --tokenid 0.0.34741650 --amount 100000000000"
+    "addReward": "npx hardhat addReward --contractaddress 0x0000000000000000000000000000000002Dc72eE --rewardaddress 0x0000000000000000000000000000000002dc6fa8 --rewarddistributor 0.0.47795264 --rewardduration 86400",
+    "sendReward": "npx hardhat sendReward --contractaddress 0x0000000000000000000000000000000002Dc72eE --rewardaddress 0x0000000000000000000000000000000002dc6fa8 --rewardamount 10000 --rewarddecimals 8",
+    "approveERC20": "npx hardhat approveERC20 --tokenid 0x0000000000000000000000000000000002dc6fbe --spender 0x0000000000000000000000000000000002Dc72eE --amount 100000000000 --lender 0.0.47795264 --lenderpk 0x981fda8cf4ac64adb31e387351729bfd3feef99ad127b83d31135a7c5b56371e",
+
+    "associateToken": "npx hardhat associateToken --accountid 0.0.47795264 --pk 0x981fda8cf4ac64adb31e387351729bfd3feef99ad127b83d31135a7c5b56371e --tokenid 0.0.48000936",
+    "approveToken": "npx hardhat approveToken --accountid 0.0.47795264 --pk 0x981fda8cf4ac64adb31e387351729bfd3feef99ad127b83d31135a7c5b56371e --spenderaccountid 0x0000000000000000000000000000000002Dc72eE --tokenid 00.0.48000936 --amount 100000000000000",
+    "stake": "npx hardhat stake --contractaddress 0x0000000000000000000000000000000002Dc72eE --amount 100000",
+    "withdraw": "npx hardhat withdraw --contractaddress 0x0000000000000000000000000000000002Dc72eE --amount 100000",
+    "exit": "npx hardhat exit --contractaddress 0x0000000000000000000000000000000002Dc72eE"
   },
   "repository": "https://github.com/LimeChain/HeliSwap-yield-farming",
   "author": "Martin Dobrev",
