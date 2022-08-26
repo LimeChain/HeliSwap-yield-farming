@@ -2,12 +2,12 @@
 
 pragma solidity 0.5.17;
 
-import "./ReentrancyGuard.sol";
-import "./Pausable.sol";
-import "./libraries/Math.sol";
-import "./libraries/SafeERC20.sol";
-import "./interfaces/IERC20.sol";
-import "./libraries/SafeMath.sol";
+import './ReentrancyGuard.sol';
+import './Pausable.sol';
+import './libraries/Math.sol';
+import './libraries/SafeERC20.sol';
+import './interfaces/IERC20.sol';
+import './libraries/SafeMath.sol';
 
 contract MultiRewards is ReentrancyGuard, Pausable {
     using SafeMath for uint256;
@@ -58,20 +58,22 @@ contract MultiRewards is ReentrancyGuard, Pausable {
         if (_totalSupply == 0) {
             return rewardData[_rewardsToken].rewardPerTokenStored;
         }
-        return rewardData[_rewardsToken].rewardPerTokenStored.add(
-            lastTimeRewardApplicable(_rewardsToken)
-            .sub(rewardData[_rewardsToken].lastUpdateTime)
-            .mul(rewardData[_rewardsToken].rewardRate)
-            .mul(1e18)
-            .div(_totalSupply)
-        );
+        return
+            rewardData[_rewardsToken].rewardPerTokenStored.add(
+                lastTimeRewardApplicable(_rewardsToken)
+                    .sub(rewardData[_rewardsToken].lastUpdateTime)
+                    .mul(rewardData[_rewardsToken].rewardRate)
+                    .mul(1e18)
+                    .div(_totalSupply)
+            );
     }
 
     function earned(address account, address _rewardsToken) public view returns (uint256) {
-        return _balances[account]
-        .mul(rewardPerToken(_rewardsToken).sub(userRewardPerTokenPaid[account][_rewardsToken]))
-        .div(1e18)
-        .add(rewards[account][_rewardsToken]);
+        return
+            _balances[account]
+                .mul(rewardPerToken(_rewardsToken).sub(userRewardPerTokenPaid[account][_rewardsToken]))
+                .div(1e18)
+                .add(rewards[account][_rewardsToken]);
     }
 
     function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
@@ -140,15 +142,11 @@ contract MultiRewards is ReentrancyGuard, Pausable {
         } else {
             uint256 remaining = rewardData[_rewardsToken].periodFinish.sub(block.timestamp);
             uint256 leftover = remaining.mul(rewardData[_rewardsToken].rewardRate);
-            rewardData[_rewardsToken].rewardRate = reward.add(leftover).div(
-                rewardData[_rewardsToken].rewardsDuration
-            );
+            rewardData[_rewardsToken].rewardRate = reward.add(leftover).div(rewardData[_rewardsToken].rewardsDuration);
         }
 
         rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
-        rewardData[_rewardsToken].periodFinish = block.timestamp.add(
-            rewardData[_rewardsToken].rewardsDuration
-        );
+        rewardData[_rewardsToken].periodFinish = block.timestamp.add(rewardData[_rewardsToken].rewardsDuration);
 
         emit RewardSent(reward);
         emit RewardTokenSnapshot(_rewardsToken, reward, rewardData[_rewardsToken].rewardsDuration);
