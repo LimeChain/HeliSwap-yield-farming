@@ -40,19 +40,6 @@ contract MultiRewards is ReentrancyGuard, Pausable {
         stakingToken = IERC20(_stakingToken);
     }
 
-    function addReward(
-        address _rewardsToken,
-        uint256 _rewardsDuration
-    ) public onlyOwner {
-        require(rewardData[_rewardsToken].rewardsDuration == 0);
-        rewardTokens.push(_rewardsToken);
-        rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
-
-        optimisticAssociation(_rewardsToken);
-
-        emit RewardAdded(_rewardsToken, _rewardsDuration);
-    }
-
     /* ========== VIEWS ========== */
 
     function totalSupply() external view returns (uint256) {
@@ -71,8 +58,7 @@ contract MultiRewards is ReentrancyGuard, Pausable {
         if (_totalSupply == 0) {
             return rewardData[_rewardsToken].rewardPerTokenStored;
         }
-        return
-        rewardData[_rewardsToken].rewardPerTokenStored.add(
+        return rewardData[_rewardsToken].rewardPerTokenStored.add(
             lastTimeRewardApplicable(_rewardsToken)
             .sub(rewardData[_rewardsToken].lastUpdateTime)
             .mul(rewardData[_rewardsToken].rewardRate)
@@ -82,8 +68,7 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     }
 
     function earned(address account, address _rewardsToken) public view returns (uint256) {
-        return
-        _balances[account]
+        return _balances[account]
         .mul(rewardPerToken(_rewardsToken).sub(userRewardPerTokenPaid[account][_rewardsToken]))
         .div(1e18)
         .add(rewards[account][_rewardsToken]);
@@ -135,6 +120,16 @@ contract MultiRewards is ReentrancyGuard, Pausable {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
+    function addReward(address _rewardsToken, uint256 _rewardsDuration) external onlyOwner {
+        require(rewardData[_rewardsToken].rewardsDuration == 0);
+        rewardTokens.push(_rewardsToken);
+        rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
+
+        optimisticAssociation(_rewardsToken);
+
+        emit RewardAdded(_rewardsToken, _rewardsDuration);
+    }
+
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external onlyOwner updateReward(address(0)) {
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
@@ -159,25 +154,12 @@ contract MultiRewards is ReentrancyGuard, Pausable {
         emit RewardTokenSnapshot(_rewardsToken, reward, rewardData[_rewardsToken].rewardsDuration);
     }
 
-    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
-    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
-        require(tokenAddress != address(stakingToken), 'Cannot withdraw staking token');
-        require(rewardData[tokenAddress].lastUpdateTime == 0, 'Cannot withdraw reward token');
-        IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
-
-        emit Recovered(tokenAddress, tokenAmount);
-    }
-
     function setRewardsDuration(address _rewardsToken, uint256 _rewardsDuration) external onlyOwner {
         require(block.timestamp > rewardData[_rewardsToken].periodFinish, 'Reward period still active');
         require(_rewardsDuration > 0, 'Reward duration must be non-zero');
-        rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
 
-        emit RewardsDurationUpdated(
-            address(this),
-            _rewardsToken,
-            rewardData[_rewardsToken].rewardsDuration
-        );
+        rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
+        emit RewardsDurationUpdated(_rewardsToken, _rewardsDuration);
     }
 
     /* ========== MODIFIERS ========== */
@@ -217,7 +199,6 @@ contract MultiRewards is ReentrancyGuard, Pausable {
 
     // emitted whenever a user interacts with the contract and changes his stake
     event AccountStakeSnapshot(address user, uint256 currentStake);
-
     event RewardTokenSnapshot(address rewardsTokenAddress, uint256 rewardsTokenSupply, uint256 remainingTotalDuration);
     event SupplySnapshot(uint256 totalSupply);
 }
