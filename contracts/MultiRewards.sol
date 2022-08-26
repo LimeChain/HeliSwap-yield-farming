@@ -16,10 +16,9 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     /* ========== STATE VARIABLES ========== */
 
     struct Reward {
-        address rewardsDistributor;
-        uint256 rewardsDuration;
         uint256 periodFinish;
         uint256 rewardRate;
+        uint256 rewardsDuration;
         uint256 lastUpdateTime;
         uint256 rewardPerTokenStored;
     }
@@ -43,12 +42,10 @@ contract MultiRewards is ReentrancyGuard, Pausable {
 
     function addReward(
         address _rewardsToken,
-        address _rewardsDistributor,
         uint256 _rewardsDuration
     ) public onlyOwner {
         require(rewardData[_rewardsToken].rewardsDuration == 0);
         rewardTokens.push(_rewardsToken);
-        rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
         rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
 
         optimisticAssociation(_rewardsToken);
@@ -98,13 +95,6 @@ contract MultiRewards is ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function setRewardsDistributor(address _rewardsToken, address _rewardsDistributor)
-    external
-    onlyOwner
-    {
-        rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
-    }
-
     function stake(uint256 amount) external nonReentrant notPaused updateReward(msg.sender) {
         require(amount > 0, 'Cannot stake 0');
         _totalSupply = _totalSupply.add(amount);
@@ -143,24 +133,9 @@ contract MultiRewards is ReentrancyGuard, Pausable {
         getReward();
     }
 
-    /* ========== HELPER FUNCTIONS ========== */
-    function optimisticAssociation(address token) internal {
-        (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSignature('associateToken(address,address)', address(this), token)
-        );
-        require(success, 'HTS Precompile: CALL_EXCEPTION');
-        int32 responseCode = abi.decode(result, (int32));
-        // Success = 22; Non-HTS token (erc20) = 167
-        require(responseCode == 22 || responseCode == 167, 'HTS Precompile: CALL_ERROR');
-    }
-
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function notifyRewardAmount(address _rewardsToken, uint256 reward)
-    external
-    updateReward(address(0))
-    {
-        require(rewardData[_rewardsToken].rewardsDistributor == msg.sender);
+    function notifyRewardAmount(address _rewardsToken, uint256 reward) external onlyOwner updateReward(address(0)) {
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
@@ -193,9 +168,8 @@ contract MultiRewards is ReentrancyGuard, Pausable {
         emit Recovered(tokenAddress, tokenAmount);
     }
 
-    function setRewardsDuration(address _rewardsToken, uint256 _rewardsDuration) external {
+    function setRewardsDuration(address _rewardsToken, uint256 _rewardsDuration) external onlyOwner {
         require(block.timestamp > rewardData[_rewardsToken].periodFinish, 'Reward period still active');
-        require(rewardData[_rewardsToken].rewardsDistributor == msg.sender);
         require(_rewardsDuration > 0, 'Reward duration must be non-zero');
         rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
 
@@ -219,6 +193,18 @@ contract MultiRewards is ReentrancyGuard, Pausable {
             }
         }
         _;
+    }
+
+    /* ========== HELPER FUNCTIONS ========== */
+
+    function optimisticAssociation(address token) internal {
+        (bool success, bytes memory result) = address(0x167).call(
+            abi.encodeWithSignature('associateToken(address,address)', address(this), token)
+        );
+        require(success, 'HTS Precompile: CALL_EXCEPTION');
+        int32 responseCode = abi.decode(result, (int32));
+        // Success = 22; Non-HTS token (erc20) = 167
+        require(responseCode == 22 || responseCode == 167, 'HTS Precompile: CALL_ERROR');
     }
 
     /* ========== EVENTS ========== */
