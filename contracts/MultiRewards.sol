@@ -192,7 +192,7 @@ contract MultiRewards is ReentrancyGuard, Pausable {
     event RewardAdded(address rewardTokenAddress, uint256 rewardDuration);
     event RewardSent(uint256 reward);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
-    event RewardsDurationUpdated(address indexed campaignAddress, address token, uint256 newDuration);
+    event RewardsDurationUpdated(address token, uint256 newDuration);
     event Recovered(address token, uint256 amount);
 
     // emitted whenever a user interacts with the contract and changes his stake
